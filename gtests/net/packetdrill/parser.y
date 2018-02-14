@@ -548,6 +548,8 @@ static struct tcp_option *new_tcp_exp_fast_open_option(const char *cookie_string
 	struct code_spec *code;
 	struct tcp_option *tcp_option;
 	struct tcp_options *tcp_options;
+	struct udp_option *udp_option;
+	struct udp_options *udp_options;
 	struct expression *expression;
 	struct expression_list *expression_list;
 	struct errno_spec *errno_info;
@@ -679,6 +681,8 @@ static struct tcp_option *new_tcp_exp_fast_open_option(const char *cookie_string
 %type <transport_info> opt_icmp_echoed
 %type <tcp_options> opt_tcp_options tcp_option_list
 %type <tcp_option> tcp_option sack_block_list sack_block
+%type <udp_options> opt_udp_options udp_option_list
+%type <udp_option> udp_option 
 %type <string> function_name
 %type <expression_list> expression_list function_arguments
 %type <expression> expression binary_expression array
@@ -2412,7 +2416,7 @@ tcp_packet_spec
 ;
 
 udp_packet_spec
-: packet_prefix UDP '(' INTEGER ')' {
+: packet_prefix UDP '(' INTEGER ')' opt_udp_options {
 	char *error = NULL;
 	struct packet *outer = $1, *inner = NULL;
 	enum direction_t direction = outer->direction;
@@ -2421,7 +2425,7 @@ udp_packet_spec
 		semantic_error("UDP payload size out of range");
 	}
 
-	inner = new_udp_packet(in_config->wire_protocol, direction, $4, &error);
+	inner = new_udp_packet(in_config->wire_protocol, direction, $4, $6, &error);
 	if (inner == NULL) {
 		assert(error != NULL);
 		semantic_error(error);
@@ -2634,6 +2638,54 @@ ip_ecn
 | ECT01		{ $$ = ECN_ECT01; }
 | CE		{ $$ = ECN_CE; }
 ;
+
+opt_udp_options
+:							{ $$ = udp_options_new(); }
+| '<' udp_option_list '>'	{ $$ = $2; }
+| '<' ELLIPSIS '>'			{ $$ = NULL; }
+;
+
+udp_option_list
+: udp_option                       {
+    $$ = udp_options_new();
+    if (udp_options_append($$, $1)) {
+        semantic_error("UDP option list too long");
+    }
+}
+| udp_option_list ',' udp_option   {
+    $$ = $1;
+    if (udp_options_append($$, $3)) {
+        semantic_error("UDP option list too long");
+    }
+}
+;
+
+udp_option
+: NOP              { $$ = udp_option_new(UDPOPT_NOP, 1); }
+| EOL              { $$ = udp_option_new(UDPOPT_EOL, 1); }
+| MSS INTEGER      {
+    $$ = udp_option_new(UDPOPT_MSS, UDPOLEN_MSS);
+    if (!is_valid_u16($2)) {
+        semantic_error("mss value out of range");
+    }
+    $$->data.mss.bytes = htons($2);
+}
+| TIMESTAMP VAL ignore_integer ECR abs_integer  {
+    u32 val, ecr;
+    ignore_ts_val = $3.ignore;
+    absolute_ts_ecr = $5.absolute;
+    $$ = udp_option_new(UDPOPT_TIME, UDPOLEN_TIME);
+    val = $3.integer;
+    ecr = $5.integer;
+    if (!is_valid_u32(val)) {
+        semantic_error("ts val out of range");
+    }
+    if (!is_valid_u32(ecr)) {
+        semantic_error("ecr val out of range");
+    }
+    $$->data.time_stamp.val = htonl(val);
+    $$->data.time_stamp.ecr = htonl(ecr);
+};
 
 flags
 : WORD         { $$ = $1; }

@@ -26,10 +26,12 @@
 
 #include "ip_packet.h"
 #include "udp.h"
+#include "udp_options.h"
 
 struct packet *new_udp_packet(int address_family,
 			       enum direction_t direction,
 			       u16 udp_payload_bytes,
+				   const struct udp_options *udp_options,
 			       char **error)
 {
 	struct packet *packet = NULL;  /* the newly-allocated result packet */

@@ -28,6 +28,7 @@
 #include "types.h"
 
 #include "packet.h"
+#include "udp_options.h"
 
 /* Create and initialize a new struct packet containing a UDP segment.
  * The 'flags' are a tcpdump-style sequence of UDP header flags.
@@ -37,5 +38,6 @@
 extern struct packet *new_udp_packet(int address_family,
 				     enum direction_t direction,
 				     u16 udp_payload_bytes,
+					 const struct udp_options *udp_options,
 				     char **error);
 #endif /* __UDP_PACKET_H__ */

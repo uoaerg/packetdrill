@@ -33,6 +33,30 @@
 
 #include "types.h"
 
+#define UDPOPT_EOL       0
+#define UDPOPT_NOP       1
+#define UDPOPT_OCS       2
+#define UDPOPT_ACS       3
+#define UDPOPT_LITE      4
+#define UDPOPT_MSS       5
+#define UDPOPT_TIME      6
+#define UDPOPT_FRAG      7
+#define UDPOPT_AE        8
+#define UDPOPT_ECHOREQ   9
+#define UDPOPT_ECHORES   10
+
+#define UDPOLEN_EOL      0
+#define UDPOLEN_NOP      0
+#define UDPOLEN_OCS      2
+#define UDPOLEN_ACS      4
+#define UDPOLEN_LITE     4
+#define UDPOLEN_MSS      4
+#define UDPOLEN_TIME     10
+#define UDPOLEN_FRAG     12
+#define UDPOLEN_ECHOREQ  6
+#define UDPOLEN_ECHORES  6
+
+
 /* UDP header. See RFC 768. */
 struct udp {
 	__be16	src_port;
